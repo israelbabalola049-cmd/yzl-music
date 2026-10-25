@@ -1,0 +1,39 @@
+{
+  "name": "my-music-player",
+  "productName": "YZL Music",
+  "version": "0.5.0",
+  "description": "YZL Music - a local music player",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --publish never"
+  },
+  "build": {
+    "appId": "com.yzl.music",
+    "productName": "YZL Music",
+    "artifactName": "YZL-Music-Setup-${version}.${ext}",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!dist/**/*",
+      "!.github/**/*",
+      "!*.lnk",
+      "!*.md"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "YZL Music"
+    }
+  },
+  "devDependencies": {
+    "electron": "^43.3.0",
+    "electron-builder": "^26.0.0"
+  }
+}
