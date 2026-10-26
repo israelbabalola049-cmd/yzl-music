@@ -9,11 +9,12 @@
   html,body { height:100%; }
   body { margin:0; display:flex; flex-direction:column; background:var(--bg); color:var(--text); font-family:"Segoe UI",sans-serif; overflow:hidden; user-select:none; }
   button { font-family:inherit; }
-  .titlebar { height:36px; flex:none; -webkit-app-region:drag; }
-  .app { flex:1; min-height:0; display:grid; grid-template-columns:340px 1fr; gap:var(--gap); padding:0 var(--gap); }
+  .dragbar { position:fixed; top:0; left:0; right:140px; height:36px; z-index:1; -webkit-app-region:drag; }
+  button, input, select, textarea, a, .row, .deck, .modalbg { -webkit-app-region:no-drag; }
+  .app { flex:1; min-height:0; display:grid; grid-template-columns:340px 1fr; gap:var(--gap); padding:var(--gap) var(--gap) 0; }
   .side, .main { border:1px solid var(--border); border-bottom:0; border-radius:var(--r) var(--r) 0 0; min-height:0; min-width:0; }
   .side { background:var(--side); padding:16px 14px; display:flex; flex-direction:column; gap:12px; }
-  .main { background:linear-gradient(180deg,#15111c 0,var(--bg) 300px); padding:0 26px 22px; overflow-y:auto; }
+  .main { background:linear-gradient(180deg,#15111c 0,var(--bg) 300px); padding:8px 26px 22px; overflow-y:auto; }
   .brand { display:flex; align-items:center; gap:10px; font-weight:800; font-size:18px; }
   .logo { width:30px; height:30px; border-radius:10px; background:conic-gradient(from 0deg,#2a1420,#b13e5c,#2a1420,#4a0e22,#2a1420); position:relative; } .logo::after { content:''; position:absolute; inset:11px; border-radius:50%; background:var(--side); }
   .head { display:flex; align-items:center; justify-content:space-between; padding-top:26px; margin-bottom:18px; } .head h1 { margin:0; font-size:30px; }
@@ -80,7 +81,7 @@
 </style>
 </head>
 <body>
-<div class="titlebar"></div>
+<div class="dragbar"></div>
 <div class="app">
   <aside class="side">
     <div class="brand"><div class="logo"></div>Disc Jockey</div>

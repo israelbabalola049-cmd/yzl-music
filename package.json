@@ -30,7 +30,17 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "shortcutName": "YZL Music"
-    }
+    },
+    "extraResources": [
+      {
+        "from": "build/thumbar",
+        "to": "thumbar"
+      },
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
+      }
+    ]
   },
   "devDependencies": {
     "electron": "^43.3.0",

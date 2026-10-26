@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, dialog, shell, screen } = require('electron');
+const { app, BrowserWindow, Menu, nativeImage, ipcMain, dialog, shell, screen } = require('electron');
 const https = require('https');
 const path = require('path');
 const fs = require('fs');
@@ -12,7 +12,9 @@ app.setName("YZL Music");
 app.setPath('userData', path.join(app.getPath('appData'), 'my-music-player'));
 app.setAppUserModelId('com.yzl.music');   // Windows uses this to group the taskbar icon and show the right name
 
-const APP_ICON = path.join(__dirname, 'build', 'icon.ico');
+// electron-builder keeps the build folder out of the installed app, so these are shipped as extra resources
+const RES = app.isPackaged ? process.resourcesPath : path.join(__dirname, 'build');
+const APP_ICON = path.join(RES, 'icon.ico');
 
 const AUDIO = ['.mp3', '.wav', '.flac', '.m4a', '.ogg', '.aac', '.opus'];
 const userFile = name => path.join(app.getPath('userData'), name);
@@ -244,10 +246,11 @@ function openMini() {
     if (alive(mainWin)) { mainWin.show(); mainWin.focus(); mainWin.webContents.send('mini-closed'); }
   });
 }
-ipcMain.on('set-chrome', (e, color) => { if (alive(mainWin) && /^#[0-9a-f]{6}$/i.test(color) && mainWin.setTitleBarOverlay) { try { mainWin.setTitleBarOverlay({ color, symbolColor: '#ffffff', height: 36 }); } catch {} } });
-ipcMain.handle('mini-open', (e, state) => { miniLast = state; openMini(); });
+ipcMain.on('set-chrome', (e, color) => { if (alive(mainWin) && /^#[0-9a-f]{6}$/i.test(color) && mainWin.setTitleBarOverlay) { try { mainWin.setTitleBarOverlay({ color: '#00000000', symbolColor: '#ffffff', height: 36 }); } catch {} } });
+ipcMain.handle('mini-open', (e, state) => { miniLast = state; syncPlaying(state); openMini(); });
 ipcMain.on('mini-state', (e, st) => {
   miniLast = Object.assign(miniLast || {}, st);
+  syncPlaying(st);
   if (alive(miniWin) && !miniWin.webContents.isLoading()) miniWin.webContents.send('mini-state', st);
 });
 ipcMain.on('mini-ready', e => { if (miniLast) e.sender.send('mini-state', miniLast); });
@@ -265,6 +268,32 @@ ipcMain.on('mini-drag-start', () => { if (alive(miniWin)) { const b = miniWin.ge
 ipcMain.on('mini-drag', (e, dx, dy) => { if (alive(miniWin) && miniDrag) miniWin.setBounds({ x: Math.round(miniDrag.x + dx), y: Math.round(miniDrag.y + dy), width: miniDrag.w, height: miniDrag.h }); });
 ipcMain.on('mini-drag-end', () => { miniDrag = null; saveMiniPos(); });
 
+// ---------- taskbar preview buttons: previous / play-pause / next under the window thumbnail ----------
+// They reuse the same commands the miniplayer sends, so the player window handles them the same way.
+let isPlaying = false;
+const thumbIcon = n => nativeImage.createFromPath(path.join(RES, 'thumbar', n + '.png'));
+function updateThumbar() {
+  if (process.platform !== 'win32' || !alive(mainWin)) return;
+  const cmd = c => () => { if (alive(mainWin)) mainWin.webContents.send('mini-cmd', c); };
+  try {
+    mainWin.setThumbarButtons([
+      { tooltip: 'Previous', icon: thumbIcon('prev'), click: cmd('prev') },
+      { tooltip: isPlaying ? 'Pause' : 'Play', icon: thumbIcon(isPlaying ? 'pause' : 'play'), click: cmd('toggle') },
+      { tooltip: 'Next', icon: thumbIcon('next'), click: cmd('next') }
+    ]);
+  } catch {}
+}
+// flips the play/pause icon when the player reports whether music is playing
+function syncPlaying(st) {
+  if (!st) return;
+  const v = typeof st.playing === 'boolean' ? st.playing
+          : typeof st.isPlaying === 'boolean' ? st.isPlaying
+          : typeof st.paused === 'boolean' ? !st.paused : null;
+  if (v === null || v === isPlaying) return;
+  isPlaying = v;
+  updateThumbar();
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200, height: 740,
@@ -274,10 +303,12 @@ function createWindow() {
     icon: APP_ICON,
     autoHideMenuBar: true,
     titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#0b0e15', symbolColor: '#ffffff', height: 36 },
+    titleBarOverlay: { color: '#00000000', symbolColor: '#ffffff', height: 36 },   // transparent: the window buttons float over the page, no coloured strip
     webPreferences: { preload: path.join(__dirname, 'preload.js'), backgroundThrottling: false }
   });
   mainWin = win;
+  win.on('page-title-updated', e => e.preventDefault());   // keep the taskbar/window title as "YZL Music" whatever the page says
+  win.webContents.on('did-finish-load', updateThumbar);
   win.on('closed', () => { mainWin = null; if (alive(miniWin)) miniWin.destroy(); });
   win.loadFile('index.html');
 }

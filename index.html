@@ -19,7 +19,7 @@
   button, input, select, textarea, a, .nav, .row, .modalbg, .menu, .cspop { -webkit-app-region:no-drag; }
 
   /* ---------- layout ---------- */
-  .app { flex:1; min-height:0; display:grid; grid-template-columns:calc(250px + var(--gap)) 1fr 0px; transition:grid-template-columns .35s ease; padding:0 var(--gap) 0; }
+  .app { flex:1; min-height:0; display:grid; grid-template-columns:calc(250px + var(--gap)) 1fr 0px; transition:grid-template-columns .35s ease; padding:var(--gap) var(--gap) 0; }
   .app.showRight { grid-template-columns:calc(250px + var(--gap)) 1fr calc(290px + var(--gap)); }
 
   /* ---------- left sidebar ---------- */
@@ -2399,7 +2399,11 @@ async function miniState() {
   let cover = null; if (s) cover = s.coverOverride || await getCover(s.path);
   return { has: !!s, title: s ? s.title : '', artist: s ? s.artist : '', cover, bg: s ? grad(s.album) : '', paused: d.paused, cur: d.currentTime || 0, dur: isFinite(d.duration) ? d.duration : 0 };
 }
-async function miniPush() { if (miniOn && window.api.miniState) window.api.miniState(await miniState()); }
+async function miniPush() {
+  if (!window.api.miniState) return;
+  if (!miniOn) { window.api.miniState({ paused: deck().paused }); return; }   // miniplayer closed: still tell main.js so the taskbar play/pause button flips
+  window.api.miniState(await miniState());
+}
 function miniTick() {
   if (!miniOn) return;
   const now = performance.now(); if (now - miniTickT < 250) return; miniTickT = now;
